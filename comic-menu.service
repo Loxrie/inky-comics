@@ -1,0 +1,14 @@
+[Unit]
+Description=Comic Menu Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/youruser/inkyimpression6/comics/menu.sh
+User=youruser
+Group=yourgroup
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
