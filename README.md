@@ -109,7 +109,7 @@ e.g.
 echo -n "/home/user/Pictures/bob.jpg" > /home/user/comic/.new.comic.please
 ```
 
-##License
+## License
 
 Will add a new LICENSE (prob GPLv3) shortly.
 
