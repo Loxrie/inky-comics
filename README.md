@@ -44,7 +44,7 @@ The requirements from requirements.txt and the inky package.  Which isn't there 
 2. Create a settings.py with an API_KEY variable for your key.
 3. Create the following two variables SEARCH_QUERIES and RANDOM_VOLUME
 
-Array of tuples, first value must be "Volume" or "Character", experiment here. Some query terms work better as Character, others as Volume.  I found it particularly repetitive with Poison Ivy as Volume.
+Array of tuples, first value must be "Volume" or "Character", experiment here. Some query terms work better as Character, others as Volume.  I found it particularly repetitive with Poison Ivy with the default code.
 
 ```
 SEARCH_QUERIES = [
@@ -59,6 +59,8 @@ SEARCH_QUERIES = [
     ("Character", "Jenny Sparks")
 ]
 ```
+
+It comes down to whether you just want covers from Batman comics, or covers from comics Batman has appeared in?
 
 RANDOM_VOLUME is an array of dict, with the key as a value from your search query.  If a search is Volume, the query should be present here.  As an example setting "2000 AD" to True gives lots of smaller results rather than the epic multi thousand issue run of the original 2000 AD.
 
