@@ -98,7 +98,9 @@ def find_random_comic_image(api_key, series_id):
         issue = random.choice(results)
         # print a link to the issue page on Comic Vine
         print(f"Find out more: {issue['site_detail_url']}")
-        image_link = issue["image"]["original_url"]
+        images = [issue["image"]["original_url"]] + [image['original_url'] for image in issue['associated_images']]
+        print(f"Random image selected from a choice of {len(images)}")
+        image_link = random.choice(images)
         image_name = slugify(
             f"{issue['volume']['name']} {issue['name']} {issue['issue_number']}_{issue['id']}",
             allow_unicode=True,
@@ -118,10 +120,15 @@ def get_random_comic_image(api_key, comic_url):
     issue = data.get("results", [])
     if issue:
         # print a link to the issue page on Comic Vine
-        print(f"Random issue selected: ID: {issue['id']}")
         print(f"Find out more: {issue['site_detail_url']}")
-        image_link = issue["image"]["original_url"]
-        image_name = f"{issue['volume']['name']} {issue['name']} {issue['issue_number']}_{issue['id']}"
+        images = [issue["image"]["original_url"]] + [image['original_url'] for image in issue['associated_images']]
+        image_link = random.choice(images)
+        print(f"Random image selected from a choice of {len(images)}")
+        image_name = slugify(
+            f"{issue['volume']['name']} {issue['name']} {issue['issue_number']}_{issue['id']}",
+            allow_unicode=True,
+            separator=' '
+        )
         return image_link, image_name
     else:
         raise ValueError("No comic issues found for the specified series.")
