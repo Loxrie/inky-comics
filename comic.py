@@ -10,6 +10,9 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import os
 import sys
+import subprocess
+import json
+import pathlib
 
 from comicvine import ComicVine
 
@@ -20,14 +23,20 @@ DEBUG = os.environ.get("DEBUG") == "1"
 from settings import (
     API_KEY,
     BASE_URL,
+    CACHE_PATH,
     HEADERS,
     NEW_COMIC_PLEASE,
     PAD_IMAGE,
     PROCESS_IMAGE,
+    PROCESS_IMAGE_INTENT,
+    PROCESS_IMAGE_PRESET,
     RANDOM_VOLUME,
     SAVE_PATH,
     SEARCH_QUERIES,
 )
+
+# Run with DEBUG=1 python comic.py to use a mock display for testing without an Inky Impression
+DEBUG = os.environ.get("DEBUG", False)
 
 logging.basicConfig(
     level=logging.INFO if DEBUG is False else logging.DEBUG,
@@ -35,13 +44,19 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 
+# Only import these if they will be used.
+# My Pi Zero W can take 1-2 minutes to run these and still crash
+# there's currently no code saying anything like oh shit this image is huge retreat retreat!
+if PROCESS_IMAGE is True and PROCESS_IMAGE_PRESET is not None:
+    from optimise import Optimise
+    from suggestion import Suggestion
+
 # Inky Impression display setup
 if DEBUG is False:
     from inky.auto import auto
 
     inky_display = auto()
 else:
-    logging.debug("Mocking inky")
     from mockimpression import MockImpression
 
     inky_display = MockImpression(resolution=(1600, 1200))
@@ -65,14 +80,46 @@ def display_image_on_inky(image, name):
     if image.height > image.width:
         image = image.rotate(-90, expand=True)
 
-    if PROCESS_IMAGE is True:
-        logging.info("Processing image with quantize and floyd-steinberg dithering")
-        # Without conver RGB the image becomes mode P, in mode P inky doesn't attempt
-        # to enhance the image further (e.g. ignores saturation), try without convert('RGB')
-        # for personal preference
-        image = image.quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG).convert(
-            "RGB"
+    if (
+        PAD_IMAGE is True
+        and PROCESS_IMAGE is True
+        and PROCESS_IMAGE_PRESET is not None
+    ):
+        # We only want to do this to reduce load on processing as the pad function itself
+        # does this step and more
+        image = ImageOps.contain(
+            image, inky_display.resolution, Image.Resampling.LANCZOS
         )
+    elif PAD_IMAGE is False:
+        image = image.resize(inky_display.resolution, Image.Resampling.LANCZOS)
+
+    if PROCESS_IMAGE is True:
+        if PROCESS_IMAGE_PRESET is not None:
+            logging.info(
+                f"Processing image with {PROCESS_IMAGE_PRESET} preset and intent {PROCESS_IMAGE_INTENT}"
+            )
+            suggestion = Suggestion(image, intent=PROCESS_IMAGE_INTENT)
+            suggestion.suggest(preset=PROCESS_IMAGE_PRESET)
+            image = (
+                Optimise(
+                    {
+                        "imageAdjustmentOptions": {
+                            "toneMapping": suggestion.tone_mapping(),
+                            "dynamicRangeCompression": suggestion.dynamic_range_compression(),
+                        },
+                    }
+                )
+                .load(image)
+                .apply_image_adjustments()
+                .dither_canvas()
+                .colour_mapping()
+                .get_image()
+            )
+        else:
+            logging.info(
+                "Processing image with quantize and floyd-steinberg dithering"
+            )
+            image = image.quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG)
 
     if PAD_IMAGE is True:
         logging.info("Padding image")
@@ -81,11 +128,11 @@ def display_image_on_inky(image, name):
         image = ImageOps.pad(
             image,
             inky_display.resolution,
-            color="White",
+            color="White" if PROCESS_IMAGE_PRESET is None else 1,
             centering=(0.5, 0.5),
         )
 
-    inky_display.set_image(image, saturation=0.5)
+    inky_display.set_image(image, saturation=0.5 if PROCESS_IMAGE is False else 0)
     logging.info("Updating Inky Impression!")
     inky_display.show()
 
@@ -111,7 +158,7 @@ def displayComic():
 
         if random_comic_url is not None:
             comic_image_url, image_name = cv.get_random_image_url(random_comic_url)
-            logging.info(f"Would open : {comic_image_url}")
+            logging.info(f"Will open : {comic_image_url}")
             image, name = get_image_from_url(comic_image_url, image_name)
             display_image_on_inky(image, name)
 
@@ -122,7 +169,8 @@ def displayComic():
 
 def displayPoster(file):
     try:
-        display_image_on_inky(Image.open(file))
+        name = pathlib.Path(file).stem
+        display_image_on_inky(Image.open(file), f"{name}_processed")
     except Exception as e:
         logging.exception(e)
         raise
