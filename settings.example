@@ -6,6 +6,9 @@ BASE_URL = "https://comicvine.gamespot.com/api/"
 HEADERS = {"User-Agent": "Python Comic Vine Random Image Client"}
 NEW_COMIC_PLEASE = ".new.comic.please"
 
+PROCESS_IMAGE=True
+PAD_IMAGE=True
+
 SEARCH_QUERIES = [
     ("Volume", "2000 AD"),
     ("Volume", "Witchblade"),
