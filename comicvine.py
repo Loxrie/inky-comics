@@ -8,10 +8,12 @@ class ComicVine:
     def __init__(
         self,
         api_key,
+        random,
         base_url="https://comicvine.gamespot.com/api/",
         headers={"User-Agent": "Python Comic Vine Random Image Client"},
     ):
         self.api_key = api_key
+        self.random = random
         self.base_url = base_url
         self.headers = headers
 
