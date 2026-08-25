@@ -5,7 +5,7 @@ You will need to sign up for an API key at https://comicvine.gamespot.com/api/ t
 
 import requests
 import logging
-import random
+import secrets
 from io import BytesIO
 from PIL import Image, ImageOps
 import os
@@ -46,7 +46,7 @@ else:
 
     inky_display = MockImpression(resolution=(1600, 1200))
 
-cv = ComicVine(API_KEY, BASE_URL, HEADERS)
+cv = ComicVine(API_KEY, secrets, BASE_URL, HEADERS)
 
 
 def get_image_from_url(image_url, name):
@@ -95,11 +95,8 @@ def displayComic():
         comic_image_url = None
         random_comic_url = None
 
-        # Seed RNG
-        random.seed(None, version=2)
-        cv.set_random(random)
         # Pick a random search term from the list
-        search_type, search_query = random.choice(SEARCH_QUERIES)
+        search_type, search_query = secrets.choice(SEARCH_QUERIES)
         logging.info(f"Chose type {search_type} query {search_query}")
 
         if search_type == "Volume":
