@@ -111,8 +111,6 @@ echo -n "/home/user/Pictures/bob.jpg" > /home/user/comic/.new.comic.please
 
 ## License
 
-Will add a new LICENSE (prob GPLv3) shortly.
-
 This project contains code originally written and provided by Pimoroni under the MIT license included here as required:
 
 ```
@@ -137,4 +135,23 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```
+
+This project contains code originally written by Robert Gühne as part of the javascript library
+[https://github.com/paperlesspaper/epdoptimize](epdoptimize). The files `optimise.py` and `suggestion.py` are a partial implementation of their work in that library and translated into python by myself.  Any bugs in this implementation code are mine.
+
+```
+Copyright [2025] [Robert Gühne]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
