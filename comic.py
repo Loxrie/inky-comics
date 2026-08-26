@@ -102,7 +102,7 @@ def displayComic():
 
         comic_image_url, image_name = cv.build_tasklist(search_type, search_query, RANDOM_VOLUME.get(search_query, None)).run()
 
-        logging.info(f"Would open : {comic_image_url}")
+        logging.info(f"Will open : {comic_image_url}")
         image, name = get_image_from_url(comic_image_url, image_name)
         display_image_on_inky(image, name)
 
