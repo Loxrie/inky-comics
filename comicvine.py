@@ -34,7 +34,7 @@ class ComicVine:
 
         if self.dedupe is True:
             self.seen = deque(maxlen=history_size)
-            self.task_list = []
+            self.task_list = deque()
             self.query = None
             self.last_chance = False
             self.bummer = None
@@ -59,14 +59,15 @@ class ComicVine:
 
     def run(self):
         try:
-            for task in self.task_list:
+            while self.task_list:
+                task = self.task_list.popleft()
                 logging.debug(f"Calling {task} with {self.query}")
                 self.query = task(*self.query)
         except ComicCollisionError as ce:
             if self.last_chance is not True:
                 history = self.rewind()
                 self.reset()
-                self.task_list = [e[0] for e in history]
+                [self.task_list.append(e[0]) for e in history]
                 self.query = history[0][2]
                 self.last_chance = True
                 logging.debug(
@@ -75,7 +76,7 @@ class ComicVine:
             else:
                 return self.bummer
 
-        if self.last_chance is True:
+        if self.last_chance is True and self.task_list:
             self.query = self.run()
 
         return self.query
@@ -231,7 +232,7 @@ class ComicVine:
     # collate both the original cover and any special covers and pick a random image
     # Returns the image url and a potential resource name to save
     def get_random_image_url(self, *args) -> (str, str):
-        logging.debug(f"get_random_image {args}")
+        logging.debug(f"get_random_image_url {args}")
         comic_url, *discard = args
         # Once we know the volume ID we can do a second API call to fetch a list of issues and pick a random cover image
         params = {"api_key": self.api_key, "format": "json"}
