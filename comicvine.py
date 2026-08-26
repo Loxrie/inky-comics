@@ -7,6 +7,8 @@ from os import path
 
 from slugify import slugify
 
+from blinkenlight import COLORS, show_color
+
 
 class ComicCollisionError(Exception):
     def __init__(self, message):
@@ -42,7 +44,7 @@ class ComicVine:
                 with open("seen_comics.pickle", "rb") as f:
                     self.seen = pickle.load(f)
                     # Need to grow and shrink here if history_size differs from len
-                    if (history_size != self.seen.maxlen):
+                    if history_size != self.seen.maxlen:
                         old_max = self.seen.maxlen
                         self.seen = deque(self.seen, maxlen=history_size)
                         logging.warn(
@@ -116,6 +118,7 @@ class ComicVine:
 
     # Get 100 volumes (max) matching name and return a random api detail url from it
     def get_random_volume_url(self, *args) -> str:
+        show_color(COLORS["TEAL"])
         query, random_volume, *discard = args
         self.call_map = []
         params = {
@@ -160,6 +163,7 @@ class ComicVine:
     # Find all characters matching name, sort by how many comics they've appeared in (descending)
     # and return the api url for more detail from the most popular one
     def get_character_url(self, *args) -> str:
+        show_color(COLORS["TEAL"])
         query, *discard = args
         logging.debug(args)
         logging.debug(query)
@@ -190,6 +194,7 @@ class ComicVine:
 
     # Use the api detail url from above and return a random comic api url from all the comics they appeared in
     def get_random_character_appearance_url(self, *args) -> str:
+        show_color(COLORS["TURQOISE"])
         api_detail_url, *discard = args
         params = {
             "api_key": self.api_key,
@@ -218,6 +223,7 @@ class ComicVine:
 
     # Use the api detail url from /volumes and return a random comic api url from all its comics
     def get_random_comic_url(self, *args) -> str:
+        show_color(COLORS["TURQOISE"])
         volume_detail_url, *discard = args
         params = {"api_key": self.api_key, "format": "json"}
         response = requests.get(volume_detail_url, headers=self.headers, params=params)
@@ -227,12 +233,10 @@ class ComicVine:
         results = data.get("results", [])
         if results:
             issue = self.random.choice(results["issues"])
-            num_issues = len(results['issues'])
+            num_issues = len(results["issues"])
             api_detail_url = issue["api_detail_url"]
             self.call_map.append((self.get_random_comic_url, num_issues, args))
-            logging.info(
-                f"Chose issue {issue['issue_number']} out of {num_issues}"
-            )
+            logging.info(f"Chose issue {issue['issue_number']} out of {num_issues}")
             return (api_detail_url,)
         else:
             raise ValueError("No comic issues found for the specified series.")
@@ -241,6 +245,7 @@ class ComicVine:
     # collate both the original cover and any special covers and pick a random image
     # Returns the image url and a potential resource name to save
     def get_random_image_url(self, *args) -> (str, str):
+        show_color(COLORS["BLUE"])
         logging.debug(f"get_random_image_url {args}")
         comic_url, *discard = args
         # Once we know the volume ID we can do a second API call to fetch a list of issues and pick a random cover image

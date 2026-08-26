@@ -11,10 +11,10 @@ from PIL import Image, ImageOps
 import os
 import sys
 import subprocess
-import json
 import pathlib
 
 from comicvine import ComicVine
+from blinkenlight import COLORS, show_color
 
 # Run with DEBUG=1 python comic.py to use a mock display for testing without an Inky Impression
 DEBUG = os.environ.get("DEBUG") == "1"
@@ -69,6 +69,7 @@ cv = ComicVine(API_KEY, secrets, headers=HEADERS, dedupe=DEDUPE, history_size=HI
 
 
 def get_image_from_url(image_url, name):
+    show_color(COLORS["PURPLE"])
     # Display image on Inky Impression
     response = requests.get(image_url)
     response.raise_for_status()
@@ -80,6 +81,7 @@ def get_image_from_url(image_url, name):
 
 
 def display_image_on_inky(image, name):
+    show_color(COLORS["PINK"])
     # Rotate the image if it is taller than it is wide my inky is upside btw, you may want 90.
     if image.height > image.width:
         image = image.rotate(-90, expand=True)
@@ -140,12 +142,14 @@ def display_image_on_inky(image, name):
             centering=(0.5, 0.5),
         )
 
+    show_color(COLORS["HOTPINK"])
+
     if SERVER_MODE is False:
         inky_display.set_image(image, saturation=0.5 if PROCESS_IMAGE is False else 0)
         logging.info("Updating Inky Impression!")
         inky_display.show()
     elif SERVER_MODE is True and DEBUG is False:
-        print("Uploading file to frame")
+        logging.info("Uploading file to frame")
         image.save(f"{CACHE_PATH}/{name}.png")
         subprocess.run(
             ["scp", f"{CACHE_PATH}/{name}.png", "inkyframe.local:~/Pictures/Upload"]
@@ -156,9 +160,12 @@ def display_image_on_inky(image, name):
         )
         subprocess.run(["ssh", "inkyframe.local", cmd_line])
 
+    show_color(COLORS["OFF"])
+
 
 def displayComic():
     try:
+        show_color(COLORS["GREEN"])
         comic_image_url = None
         random_comic_url = None
 
@@ -169,6 +176,7 @@ def displayComic():
         comic_image_url, image_name = cv.build_tasklist(search_type, search_query, RANDOM_VOLUME.get(search_query, None)).run()
 
         logging.info(f"Will open : {comic_image_url}")
+        show_color(COLORS["PURPLE"])
         image, name = get_image_from_url(comic_image_url, image_name)
         display_image_on_inky(image, name)
 
