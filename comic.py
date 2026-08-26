@@ -65,7 +65,9 @@ else:
 
     inky_display = MockImpression(resolution=(1600, 1200))
 
-cv = ComicVine(API_KEY, secrets, headers=HEADERS, dedupe=DEDUPE, history_size=HISTORY_SIZE)
+cv = ComicVine(
+    API_KEY, secrets, headers=HEADERS, dedupe=DEDUPE, history_size=HISTORY_SIZE
+)
 
 
 def get_image_from_url(image_url, name):
@@ -90,11 +92,7 @@ def display_image_on_inky(image, name):
         logging.info("Client mode enabled, skipping processing converting to palette")
         image = image.convert("P")
 
-    if (
-        PAD_IMAGE is True
-        and PROCESS_IMAGE is True
-        and PROCESS_IMAGE_PRESET is not None
-    ):
+    if PAD_IMAGE is True and PROCESS_IMAGE is True and PROCESS_IMAGE_PRESET is not None:
         # We only want to do this to reduce load on processing as the pad function itself
         # does this step and more
         image = ImageOps.contain(
@@ -126,9 +124,7 @@ def display_image_on_inky(image, name):
                 .get_image()
             )
         else:
-            logging.info(
-                "Processing image with quantize and floyd-steinberg dithering"
-            )
+            logging.info("Processing image with quantize and floyd-steinberg dithering")
             image = image.quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG)
 
     if PAD_IMAGE is True:
@@ -173,7 +169,9 @@ def displayComic():
         search_type, search_query = secrets.choice(SEARCH_QUERIES)
         logging.info(f"Chose type {search_type} query {search_query}")
 
-        comic_image_url, image_name = cv.build_tasklist(search_type, search_query, RANDOM_VOLUME.get(search_query, None)).run()
+        comic_image_url, image_name = cv.build_tasklist(
+            search_type, search_query, RANDOM_VOLUME.get(search_query, None)
+        ).run()
 
         logging.info(f"Will open : {comic_image_url}")
         show_color(COLORS["PURPLE"])
