@@ -172,29 +172,6 @@ def displayComic():
         image, name = get_image_from_url(comic_image_url, image_name)
         display_image_on_inky(image, name)
 
-
-        # if search_type == "Volume":
-        #     volume_detail_url = cv.get_random_volume_url(
-        #         search_query, RANDOM_VOLUME[search_query]
-        #     )
-        #     random_comic_url = cv.get_random_comic_url(volume_detail_url)
-
-        # elif search_type == "Character":
-        #     character_url = cv.get_character_url(search_query)
-        #     random_comic_url = cv.get_random_character_appearance_url(character_url)
-
-        # if random_comic_url is not None:
-        #     comic_image_url, image_name = cv.get_random_image_url(random_comic_url)
-        #     logging.info(f"Would open : {comic_image_url}")
-        #     image, name = get_image_from_url(comic_image_url, image_name)
-        #     display_image_on_inky(image, name)
-        
-        # if random_comic_url is not None:
-        #     comic_image_url, image_name = cv.get_random_image_url(random_comic_url)
-        #     logging.info(f"Will open : {comic_image_url}")
-        #     image, name = get_image_from_url(comic_image_url, image_name)
-        #     display_image_on_inky(image, name)
-
     except Exception as e:
         logging.exception(e)
         raise
