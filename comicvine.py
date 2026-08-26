@@ -209,7 +209,9 @@ class ComicVine:
             self.call_map.append(
                 (self.get_random_character_appearance_url, num_issue_credits, args)
             )
-            logging.info(f"Chose issue {chosen['site_detail_url']} out of {num_issue_credits} appearances")
+            logging.info(
+                f"Chose issue {chosen['site_detail_url']} out of {num_issue_credits} appearances"
+            )
             return (api_detail_url,)
         else:
             raise ValueError(f"No character url found for {query}.")
