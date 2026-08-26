@@ -8,7 +8,7 @@ NEW_COMIC_PLEASE = ".new.comic.please"
 PROCESS_IMAGE=True
 PAD_IMAGE=True
 DEDUPE=True
-HISTORY_SIZE=122
+HISTORY_SIZE=365
 
 SEARCH_QUERIES = [
     ("Volume", "2000 AD"),

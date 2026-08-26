@@ -41,7 +41,13 @@ class ComicVine:
             if path.isfile("seen_comics.pickle"):
                 with open("seen_comics.pickle", "rb") as f:
                     self.seen = pickle.load(f)
-                    logging.debug(f"Loaded seen list of {len(self.seen)} covers")
+                    # Need to grow and shrink here if history_size differs from len
+                    if (history_size != self.seen.maxlen):
+                        old_max = self.seen.maxlen
+                        self.seen = deque(self.seen, maxlen=history_size)
+                        logging.warn(
+                            f"Reconfigured seen list from {old_max} to maxlen of {history_size}"
+                        )
 
     def build_tasklist(self, *args):
         self.reset()
