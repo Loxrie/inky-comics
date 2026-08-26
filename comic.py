@@ -19,8 +19,9 @@ DEBUG = os.environ.get("DEBUG") == "1"
 # Settings
 from settings import (
     API_KEY,
-    BASE_URL,
+    DEDUPE,
     HEADERS,
+    HISTORY_SIZE,
     NEW_COMIC_PLEASE,
     PAD_IMAGE,
     PROCESS_IMAGE,
@@ -46,7 +47,7 @@ else:
 
     inky_display = MockImpression(resolution=(1600, 1200))
 
-cv = ComicVine(API_KEY, secrets, BASE_URL, HEADERS)
+cv = ComicVine(API_KEY, secrets, headers=HEADERS, dedupe=DEDUPE, history_size=HISTORY_SIZE)
 
 
 def get_image_from_url(image_url, name):
