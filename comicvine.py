@@ -59,9 +59,12 @@ class ComicVine:
         if search_type == "Volume":
             self.task_list.append(self.get_random_volume_url)
             self.task_list.append(self.get_random_comic_url)
+        elif search_type == "Person":
+            self.task_list.append(self.get_person_url)
+            self.task_list.append(self.get_random_issue_url)
         else:
             self.task_list.append(self.get_character_url)
-            self.task_list.append(self.get_random_character_appearance_url)
+            self.task_list.append(self.get_random_issue_url)
         self.task_list.append(self.get_random_image_url)
 
         return self
@@ -117,6 +120,7 @@ class ComicVine:
         self.random = rng
 
     # Get 100 volumes (max) matching name and return a random api detail url from it
+    # the api pretends it supports sorting, it doesn't so we sort with lambda.
     def get_random_volume_url(self, *args) -> str:
         show_color(COLORS["TEAL"])
         query, random_volume, *discard = args
@@ -160,6 +164,37 @@ class ComicVine:
         else:
             raise ValueError(f"No volumes found for {query}.")
 
+    # Find all people matching name return the api detail url for the first match
+    # this query doesn't seem to be so well populated with counts etc for sorting
+    def get_person_url(self, *args) -> str:
+        show_color(COLORS["TEAL"])
+        query, *discard = args
+        logging.debug(args)
+        logging.debug(query)
+        self.call_map = []
+        params = {
+            "api_key": self.api_key,
+            "format": "json",
+            "filter": f"name:{query}",
+            "field_list": "name,api_detail_url,site_detail_url",
+            "limit": 100,
+        }
+        response = requests.get(
+            f"{self.base_url}people/", headers=self.headers, params=params
+        )
+        response.raise_for_status()
+        data = response.json()
+        response.close()
+        results = data.get("results", [])
+        if results:
+            chosen = results[0]
+            logging.info(
+                f"Chosen {chosen['name']}, find out more {chosen['site_detail_url']}"
+            )
+            return (chosen["api_detail_url"],)
+        else:
+            raise ValueError(f"No person url found for {query}.")
+
     # Find all characters matching name, sort by how many comics they've appeared in (descending)
     # and return the api url for more detail from the most popular one
     def get_character_url(self, *args) -> str:
@@ -192,30 +227,34 @@ class ComicVine:
         else:
             raise ValueError(f"No character url found for {query}.")
 
-    # Use the api detail url from above and return a random comic api url from all the comics they appeared in
-    def get_random_character_appearance_url(self, *args) -> str:
+    # Use the api detail url from above or people and return a random comic api url from all the 
+    # comics they appeared in or contributed to
+    def get_random_issue_url(self, *args) -> str:
         show_color(COLORS["TURQOISE"])
         api_detail_url, *discard = args
         params = {
             "api_key": self.api_key,
             "format": "json",
-            "field_list": "name,volume,issue_credits",
+            "field_list": "name,volume,issue_credits,issues",
             "limit": 100,
         }
         response = requests.get(api_detail_url, headers=self.headers, params=params)
         response.raise_for_status()
         data = response.json()
         response.close()
+
+        issue_field_name = "issues" if "api/person" in api_detail_url else "issue_credits"
+
         results = data.get("results", {})
         if results:
-            chosen = self.random.choice(results["issue_credits"])
-            num_issue_credits = len(results["issue_credits"])
+            chosen = self.random.choice(results[issue_field_name])
+            num_issues = len(results[issue_field_name])
             api_detail_url = chosen["api_detail_url"]
             self.call_map.append(
-                (self.get_random_character_appearance_url, num_issue_credits, args)
+                (self.get_random_issue_url, num_issues, args)
             )
             logging.info(
-                f"Chose issue {chosen['site_detail_url']} out of {num_issue_credits} appearances"
+                f"Chose issue {chosen['site_detail_url']} out of {num_issues} appearances"
             )
             return (api_detail_url,)
         else:
