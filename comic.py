@@ -89,7 +89,7 @@ def display_image_on_inky(image, name):
         image = image.rotate(-90, expand=True)
 
     if CLIENT_MODE is True:
-        logging.info("Client mode enabled, skipping processing converting to palette")
+        logging.debug("Client mode enabled, skipping processing converting to palette")
         image = image.convert("P")
 
     if PAD_IMAGE is True and PROCESS_IMAGE is True and PROCESS_IMAGE_PRESET is not None:
@@ -103,7 +103,7 @@ def display_image_on_inky(image, name):
 
     if PROCESS_IMAGE is True:
         if PROCESS_IMAGE_PRESET is not None:
-            logging.info(
+            logging.debug(
                 f"Processing image with {PROCESS_IMAGE_PRESET} preset and intent {PROCESS_IMAGE_INTENT}"
             )
             suggestion = Suggestion(image, intent=PROCESS_IMAGE_INTENT)
@@ -124,11 +124,11 @@ def display_image_on_inky(image, name):
                 .get_image()
             )
         else:
-            logging.info("Processing image with quantize and floyd-steinberg dithering")
+            logging.debug("Processing image with quantize and floyd-steinberg dithering")
             image = image.quantize(colors=256, dither=Image.Dither.FLOYDSTEINBERG)
 
     if PAD_IMAGE is True:
-        logging.info("Padding image")
+        logging.debug("Padding image")
         # This is handy, it maintains aspect ration but resizes image and then pads the space left
         # some comics look mighty weird when stretched wide to 3:4
         image = ImageOps.pad(
@@ -169,13 +169,13 @@ def displayComic():
         search_type, search_query = secrets.choice(SEARCH_QUERIES)
         logging.info(f"Chose type {search_type} query {search_query}")
 
-        comic_image_url, image_name = cv.build_tasklist(
+        result = cv.build_tasklist(
             search_type, search_query, RANDOM_VOLUME.get(search_query, None)
         ).run()
 
-        logging.info(f"Will open : {comic_image_url}")
+        logging.info(f"Will open : {result["image_url"]}")
         show_color(COLORS["PURPLE"])
-        image, name = get_image_from_url(comic_image_url, image_name)
+        image, name = get_image_from_url(result["image_url"], result["image_name"])
         display_image_on_inky(image, name)
 
     except Exception as e:

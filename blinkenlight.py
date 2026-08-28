@@ -4,7 +4,7 @@ import json
 COLORS = {
     "GREEN":    (33, 127, 57),
     "TEAL":     (35, 187, 173),
-    "TURQOISE": (37, 217, 200),
+    "TURQUOISE": (37, 217, 200),
     "BLUE":     (42, 190, 217),
     "PURPLE":   (128, 33, 104),
     "PINK":     (255, 109, 162),

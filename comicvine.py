@@ -37,7 +37,7 @@ class ComicVine:
         if self.dedupe is True:
             self.seen = deque(maxlen=history_size)
             self.task_list = deque()
-            self.query = None
+            self.last_call_result = None
             self.last_chance = False
             self.bummer = None
             if path.isfile("seen_comics.pickle"):
@@ -54,49 +54,128 @@ class ComicVine:
     def build_tasklist(self, *args):
         self.reset()
         search_type = args[0]
-        self.query = args[1:]
-        print(f"Building tasklist {search_type} with query {self.query}")
+        print(f"Building tasklist {search_type} with query {args}")
         if search_type == "Volume":
-            self.task_list.append(self.get_random_volume_url)
-            self.task_list.append(self.get_random_comic_url)
+            search_params = {
+                "query": args[1],
+                "field_list": "id,name,api_detail_url,start_year,count_of_issues",
+                "endpoint": "volumes",
+                "random_choice": args[2],
+                "sort_field": "count_of_issues",
+                "logging_fields": ["id", "name", "start_year", "count_of_issues"],
+                "log_results": True,
+            }
+            self.task_list.append((self.search, search_params))
+            comic_params = {
+                "field_name": "issues",
+                "field_list": "id,name,api_detail_url,site_detail_url,issues",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, comic_params))
         elif search_type == "Person":
-            self.task_list.append(self.get_person_url)
-            self.task_list.append(self.get_random_issue_url)
-        else:
-            self.task_list.append(self.get_character_url)
-            self.task_list.append(self.get_random_issue_url)
-        self.task_list.append(self.get_random_image_url)
+            search_params = {
+                "query": args[1],
+                "field_list": "id,name,api_detail_url,site_detail_url",
+                "endpoint": "people",
+            }
+            self.task_list.append((self.search, search_params))
+            comic_params = {
+                "field_name": "issues",
+                "field_list": "id,name,issues,count_of_issues,site_detail_url",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, comic_params))
+        elif search_type == "Character":
+            search_params = {
+                "query": args[1],
+                "field_list": "id,name,api_detail_url,site_detail_url",
+                "endpoint": "characters",
+            }
+            self.task_list.append((self.search, search_params))
+            comic_params = {
+                "field_name": "issue_credits",
+                "field_list": "id,name,volume,issue_credits",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, comic_params))
+        elif search_type == "Publisher":
+            search_params = {
+                "query": args[1],
+                "field_list": "id,name,api_detail_url,site_detail_url",
+                "endpoint": "publishers",
+            }
+            self.task_list.append((self.search, search_params))
+            volume_params = {
+                "field_name": "volumes",
+                "field_list": "id,name,volumes",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, volume_params))
+            comic_params = {
+                "field_name": "issues",
+                "field_list": "id,name,api_detail_url,site_detail_url,issues",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, comic_params))
+        elif search_type == "Teams":
+            search_params = {
+                "query": args[1],
+                "field_list": "id,name,api_detail_url,site_detail_url,count_of_isssue_appearances",
+                "endpoint": "teams",
+                "sort_field": "count_of_isssue_appearances",
+                "logging_fields": ["id", "name", "site_detail_url", "count_of_isssue_appearances"],
+            }
+            self.task_list.append((self.search, search_params))
+            comic_params = {
+                "field_name": "issue_credits",
+                "field_list": "id,name,api_detail_url,site_detail_url,issue_credits",
+                "logging_fields": ["id", "name", "site_detail_url"],
+            }
+            self.task_list.append((self.get_random_comic_url, comic_params))
+
+        if len(self.task_list) > 0:
+            self.task_list.append((self.get_random_image_url, {}))
 
         return self
 
     def run(self):
         try:
             while self.task_list:
-                task = self.task_list.popleft()
-                logging.debug(f"Calling {task} with {self.query}")
-                self.query = task(*self.query)
+                task, *rest = self.task_list.popleft()
+                logging.debug(task)
+                logging.debug(rest)
+                query_params = dict(
+                    rest[0] if len(rest) > 0 else {},
+                    **(
+                        self.last_call_result
+                        if self.last_call_result is not None
+                        else {}
+                    ),
+                )
+                logging.debug(f"Calling {task} with {query_params}")
+                self.last_call_result = task(**query_params)
         except ComicCollisionError as ce:
             if self.last_chance is not True:
                 history = self.rewind()
                 self.reset()
                 [self.task_list.append(e[0]) for e in history]
-                self.query = history[0][2]
+                self.last_call_result = history[0][2]
                 self.last_chance = True
                 logging.debug(
-                    f"Rerunning {self.task_list} with initial query {self.query}"
+                    f"Rerunning {self.task_list} with initial query {self.last_call_result}"
                 )
             else:
-                return self.bummer
+                return self.last_call_result
 
         if self.last_chance is True and self.task_list:
-            self.query = self.run()
+            self.last_call_result = self.run()
 
-        return self.query
+        return self.last_call_result
 
     def reset(self):
         self.task_list.clear()
         self.call_map.clear()
-        self.query = None
+        self.last_call_result = None
         self.last_chance = False
 
     def get_hash(self, item: str) -> str:
@@ -119,177 +198,119 @@ class ComicVine:
     def set_random(self, rng):
         self.random = rng
 
-    # Get 100 volumes (max) matching name and return a random api detail url from it
-    # the api pretends it supports sorting, it doesn't so we sort with lambda.
-    def get_random_volume_url(self, *args) -> str:
+    def search(self, **kargs) -> str:
         show_color(COLORS["TEAL"])
-        query, random_volume, *discard = args
+
+        query = kargs.get("query", None)
+        if query is None:
+            raise ValueError("query param is mandatory")
+        field_list = kargs.get("field_list", None)
+        if field_list is None:
+            raise ValueError("query param is mandatory")
+        endpoint = kargs.get("endpoint", None)
+        if endpoint is None:
+            raise ValueError("endpoint param is mandatory")
+
+        random_choice = kargs.get("random_choice", False)
+        sort_field = kargs.get("sort_field", None)
+        return_field = kargs.get("return_field", "api_detail_url")
+        logging_fields = kargs.get("logging_fields", ["name", "id"])
+        log_results = kargs.get("log_results", False)
+
         self.call_map = []
         params = {
             "api_key": self.api_key,
             "format": "json",
-            "field_list": "name,id,api_detail_url,start_year,count_of_issues",
+            "field_list": field_list,
             "filter": f"name:{query}",
             "limit": 100,
         }
         response = requests.get(
-            f"{self.base_url}volumes/", headers=self.headers, params=params
+            f"{self.base_url}{endpoint}/", headers=self.headers, params=params
         )
         response.raise_for_status()
         data = response.json()
         response.close()
         results = data.get("results", [])
-        results.sort(key=lambda x: x["count_of_issues"], reverse=True)
-        if results:
-            for idx, volume in enumerate(results, 1):
-                logging.info(
-                    f"{idx}: {volume['name']} (ID: {volume['id']}, Start Year: {volume.get('start_year', 'N/A')})"
-                )
 
-            if random_volume is True:
-                # Pick a random volume from the search results
+        if sort_field is not None:
+            results.sort(key=lambda x: x[sort_field], reverse=True)
+
+        if results:
+            if log_results is True:
+                for idx, result in enumerate(results, 1):
+                    logging.debug(
+                        f"{idx}: "
+                        + ", ".join(f"{v}: {result[v]}" for v in logging_fields)
+                    )
+
+            if random_choice is True:
+                # Pick a random entry from the search results
                 chosen = self.random.choice(results)
                 api_detail_url = chosen["api_detail_url"]
-                self.call_map.append((self.get_random_volume_url, len(results), args))
+                self.call_map.append((self.get_random_volume_url, len(results), kargs))
                 logging.info(
-                    f"Randomly selected: {chosen['name']} (ID: {chosen['id']}) {api_detail_url}"
+                    f"Randomly selected: "
+                    + ", ".join(f"{v}: {chosen[v]}" for v in logging_fields)
                 )
             else:
                 # Pick the first volume from the search results
                 chosen = results[0]
                 logging.info(
-                    f"Picked first result: {chosen['name']} (ID: {chosen['id']}) {chosen['api_detail_url']}"
+                    f"Picked first result: "
+                    + ", ".join(f"{v}: {chosen[v]}" for v in logging_fields)
                 )
-            return (chosen["api_detail_url"],)
-        else:
-            raise ValueError(f"No volumes found for {query}.")
 
-    # Find all people matching name return the api detail url for the first match
-    # this query doesn't seem to be so well populated with counts etc for sorting
-    def get_person_url(self, *args) -> str:
-        show_color(COLORS["TEAL"])
-        query, *discard = args
-        logging.debug(args)
-        logging.debug(query)
-        self.call_map = []
-        params = {
-            "api_key": self.api_key,
-            "format": "json",
-            "filter": f"name:{query}",
-            "field_list": "name,api_detail_url,site_detail_url",
-            "limit": 100,
-        }
-        response = requests.get(
-            f"{self.base_url}people/", headers=self.headers, params=params
-        )
-        response.raise_for_status()
-        data = response.json()
-        response.close()
-        results = data.get("results", [])
-        if results:
-            chosen = results[0]
-            logging.info(
-                f"Chosen {chosen['name']}, find out more {chosen['site_detail_url']}"
-            )
-            return (chosen["api_detail_url"],)
+            return {"api_detail_url": chosen[return_field]}
         else:
-            raise ValueError(f"No person url found for {query}.")
+            raise ValueError(f"No {endpoint} found for {query}.")
 
-    # Find all characters matching name, sort by how many comics they've appeared in (descending)
-    # and return the api url for more detail from the most popular one
-    def get_character_url(self, *args) -> str:
-        show_color(COLORS["TEAL"])
-        query, *discard = args
-        logging.debug(args)
-        logging.debug(query)
-        self.call_map = []
-        params = {
-            "api_key": self.api_key,
-            "format": "json",
-            "filter": f"name:{query}",
-            "field_list": "name,api_detail_url,count_of_issue_appearances",
-            "limit": 100,
-        }
-        response = requests.get(
-            f"{self.base_url}characters/", headers=self.headers, params=params
-        )
-        response.raise_for_status()
-        data = response.json()
-        response.close()
-        results = data.get("results", [])
-        results.sort(key=lambda x: x["count_of_issue_appearances"], reverse=True)
-        if results:
-            chosen = results[0]
-            logging.info(
-                f"Chosen {chosen['name']} appeared in {chosen['count_of_issue_appearances']} comics"
-            )
-            return (chosen["api_detail_url"],)
-        else:
-            raise ValueError(f"No character url found for {query}.")
+    # Use the api detail url from search and return a random comic api url from all its comics
+    def get_random_comic_url(self, **kargs) -> str:
+        show_color(COLORS["TURQUOISE"])
+        api_detail_url = kargs.get("api_detail_url")
+        if api_detail_url is None:
+            raise ValueError("api_detail_url param is mandatory")
+        field_name = kargs.get("field_name")
+        if field_name is None:
+            raise ValueError("field_name param is mandatory")
+        field_list = kargs.get("field_list", None)
+        if field_list is None:
+            raise ValueError("field_list param is mandatory")
+        return_field = kargs.get("return_field", "api_detail_url")
+        logging_fields = kargs.get("logging_fields", ["id", "site_detail_url"])
 
-    # Use the api detail url from above or people and return a random comic api url from all the 
-    # comics they appeared in or contributed to
-    def get_random_issue_url(self, *args) -> str:
-        show_color(COLORS["TURQOISE"])
-        api_detail_url, *discard = args
-        params = {
-            "api_key": self.api_key,
-            "format": "json",
-            "field_list": "name,volume,issue_credits,issues",
-            "limit": 100,
-        }
+        params = {"api_key": self.api_key, "format": "json", "field_list": field_list}
         response = requests.get(api_detail_url, headers=self.headers, params=params)
         response.raise_for_status()
         data = response.json()
         response.close()
-
-        issue_field_name = "issues" if "api/person" in api_detail_url else "issue_credits"
-
         results = data.get("results", {})
         if results:
-            chosen = self.random.choice(results[issue_field_name])
-            num_issues = len(results[issue_field_name])
-            api_detail_url = chosen["api_detail_url"]
-            self.call_map.append(
-                (self.get_random_issue_url, num_issues, args)
-            )
+            chosen = self.random.choice(results[field_name])
+            logging.debug(chosen)
+            num_issues = len(results[field_name])
+            api_detail_url = chosen[return_field]
             logging.info(
-                f"Chose issue {chosen['site_detail_url']} out of {num_issues} appearances"
+                f"Randomly selected: "
+                + ", ".join(f"{v}: {chosen[v]}" for v in logging_fields)
             )
-            return (api_detail_url,)
-        else:
-            raise ValueError(f"No character url found for {query}.")
-
-    # Use the api detail url from /volumes and return a random comic api url from all its comics
-    def get_random_comic_url(self, *args) -> str:
-        show_color(COLORS["TURQOISE"])
-        volume_detail_url, *discard = args
-        params = {"api_key": self.api_key, "format": "json"}
-        response = requests.get(volume_detail_url, headers=self.headers, params=params)
-        response.raise_for_status()
-        data = response.json()
-        response.close()
-        results = data.get("results", [])
-        if results:
-            issue = self.random.choice(results["issues"])
-            num_issues = len(results["issues"])
-            api_detail_url = issue["api_detail_url"]
-            self.call_map.append((self.get_random_comic_url, num_issues, args))
-            logging.info(f"Chose issue {issue['issue_number']} out of {num_issues}")
-            return (api_detail_url,)
+            self.call_map.append((self.get_random_comic_url, num_issues, kargs))
+            return {"api_detail_url": api_detail_url}
         else:
             raise ValueError("No comic issues found for the specified series.")
 
-    # So both routes (/volumes and /characters) lead here.  Get the detail about the issue
+    # So all routes lead here.  Get the detail about the issue
     # collate both the original cover and any special covers and pick a random image
     # Returns the image url and a potential resource name to save
-    def get_random_image_url(self, *args) -> (str, str):
+    def get_random_image_url(self, **kargs) -> (str, str):
         show_color(COLORS["BLUE"])
-        logging.debug(f"get_random_image_url {args}")
-        comic_url, *discard = args
+        api_detail_url = kargs.get("api_detail_url")
         # Once we know the volume ID we can do a second API call to fetch a list of issues and pick a random cover image
         params = {"api_key": self.api_key, "format": "json"}
-        response = requests.get(f"{comic_url}", headers=self.headers, params=params)
+        response = requests.get(
+            f"{api_detail_url}", headers=self.headers, params=params
+        )
         response.raise_for_status()
         data = response.json()
         response.close()
@@ -299,31 +320,28 @@ class ComicVine:
             images = [issue["image"]["original_url"]] + [
                 image["original_url"] for image in issue["associated_images"]
             ]
-            logging.info(f"Random image selected from a choice of {len(images)}")
             logging.info(f"Find out more: {issue['site_detail_url']}")
-            image_link = self.random.choice(images)
+            image_url = self.random.choice(images)
             image_name = slugify(
                 f"{issue['volume']['name']} {issue['name']} {issue['issue_number']}_{issue['id']}",
                 allow_unicode=True,
                 separator=" ",
             )
 
-            self.call_map.append((self.get_random_image_url, len(images), args))
-
-            logging.debug(f"Decision tree {self.call_map}")
+            self.call_map.append((self.get_random_image_url, len(images), kargs))
 
             if self.dedupe is True:
-                issue_hash = self.get_hash(image_link)
+                issue_hash = self.get_hash(image_url)
                 if issue_hash in self.seen:
-                    self.bummer = (image_link, image_name)
+                    self.bummer = {"image_url": image_url, "image_name": image_name}
                     if self.last_chance is True:
                         logging.info("Dedupe comic: Failure - returning original")
-                    raise ComicCollisionError(f"Comic collision on {image_link}")
+                    raise ComicCollisionError(f"Comic collision on {image_url}")
                 else:
                     self.add_hash(issue_hash)
 
             if self.last_chance is True:
                 logging.info("Dedupe comic: Success")
-            return image_link, image_name
+            return {"image_url": image_url, "image_name": image_name}
         else:
             raise ValueError("No comic issues found for the specified series.")
