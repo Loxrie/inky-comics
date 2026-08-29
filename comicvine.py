@@ -248,7 +248,7 @@ class ComicVine:
                 # Pick a random entry from the search results
                 chosen = self.random.choice(results)
                 api_detail_url = chosen["api_detail_url"]
-                self.call_map.append((self.get_random_volume_url, len(results), kargs))
+                self.call_map.append((self.search, len(results), kargs))
                 logging.info(
                     f"Randomly selected: "
                     + ", ".join(f"{v}: {chosen[v]}" for v in logging_fields)
