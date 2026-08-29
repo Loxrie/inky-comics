@@ -39,6 +39,7 @@ try:
     while True:
         mtime = os.stat(SETTINGS).st_mtime
         if mtime != configuration_mtime:
+            configuration_mtime = mtime
             with open(SETTINGS, "r") as file:
                 configuration = json.load(file)
                 c = Comic(configuration)
