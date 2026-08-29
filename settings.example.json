@@ -1,0 +1,48 @@
+{
+    "unicornpi": false,
+    "new_comic_file": "/tmp/.new.comic.please",
+    "server": {
+        "enabled": false,
+        "client_pi": "ipaddressorname.local"
+    },
+    "client": {
+        "enabled": false
+    },
+    "paths": {
+        "upload": "/flll/path/to/Uploads",
+        "save": "/flll/path/to/ComicVine",
+        "cache": "/flll/path/to/Processed"
+    },
+    "comicvine": {
+        "api_key": "",
+        "user_agent": "Python Comic Vine Client"
+    },
+    "image": {
+        "padding": true,
+        "processing": true,
+        "intent": null,
+        "preset": "auto"
+    },
+    "dedupe": {
+        "enabled": true,
+        "history_size": 365
+    },
+    "comics": {
+        "queries": [
+            {
+                "type": "Volume",
+                "query": "2000 AD",
+                "random": false
+            },
+            {
+                "type": "Volume",
+                "query": "Witchblade",
+                "random": true
+            },
+            {
+                "type": "Character",
+                "query": "Jenny Sparks"
+            }
+        ]
+    }
+}

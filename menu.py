@@ -6,7 +6,7 @@ import gpiodevice
 import time
 import RPi.GPIO as GPIO
 
-from settings import NEW_COMIC_PLEASE
+import json
 
 SW_A = 5
 SW_B = 6
@@ -32,17 +32,27 @@ def handle_button(pin):
 for button in BUTTONS:
     GPIO.add_event_detect(button, GPIO.FALLING, callback=handle_button, bouncetime=250)
 
+configuration_mtime = 0
+SETTINGS = "settings.json"
+
 try:
     while True:
-        if os.path.isfile(NEW_COMIC_PLEASE):
+        mtime = os.stat(SETTINGS).st_mtime
+        if mtime != configuration_mtime:
+            with open(SETTINGS, "r") as file:
+                configuration = json.load(file)
+                c = Comic(configuration)
+
+        new_comic_file = configuration["new_comic_file"]
+        if os.path.isfile(new_comic_file):
             print("Found new comic file.")
-            if os.path.getsize(NEW_COMIC_PLEASE) == 0:
-                comic.displayComic()
+            if os.path.getsize(new_comic_file) == 0:
+                c.displayComic()
             else:
-                with open(NEW_COMIC_PLEASE, "r") as file:
+                with open(new_comic_file, "r") as file:
                     poster = file.read().rstrip()
-                    comic.displayPoster(poster)
-            os.remove(NEW_COMIC_PLEASE)
+                    c.displayPoster(poster)
+            os.remove(new_comic_file)
         time.sleep(0.5)
 except KeyboardInterrupt:
     GPIO.cleanup()
