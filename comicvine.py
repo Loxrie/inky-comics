@@ -25,7 +25,9 @@ class ComicVine:
         headers={"User-Agent": "Python Comic Vine Random Image Client"},
         dedupe=False,
         history_size=122,
+        unicorn_pi=False,
     ):
+        self.unicorn_pi = unicorn_pi
         self.api_key = api_key
         self.random = random
         self.base_url = base_url
@@ -123,7 +125,12 @@ class ComicVine:
                 "field_list": "id,name,api_detail_url,site_detail_url,count_of_isssue_appearances",
                 "endpoint": "teams",
                 "sort_field": "count_of_isssue_appearances",
-                "logging_fields": ["id", "name", "site_detail_url", "count_of_isssue_appearances"],
+                "logging_fields": [
+                    "id",
+                    "name",
+                    "site_detail_url",
+                    "count_of_isssue_appearances",
+                ],
             }
             self.task_list.append((self.search, search_params))
             comic_params = {
@@ -199,7 +206,8 @@ class ComicVine:
         self.random = rng
 
     def search(self, **kargs) -> str:
-        show_color(COLORS["TEAL"])
+        if self.unicorn_pi:
+            show_color(COLORS["TEAL"])
 
         query = kargs.get("query", None)
         if query is None:
@@ -267,7 +275,8 @@ class ComicVine:
 
     # Use the api detail url from search and return a random comic api url from all its comics
     def get_random_comic_url(self, **kargs) -> str:
-        show_color(COLORS["TURQUOISE"])
+        if self.unicorn_pi:
+            show_color(COLORS["TURQUOISE"])
         api_detail_url = kargs.get("api_detail_url")
         if api_detail_url is None:
             raise ValueError("api_detail_url param is mandatory")
@@ -304,7 +313,8 @@ class ComicVine:
     # collate both the original cover and any special covers and pick a random image
     # Returns the image url and a potential resource name to save
     def get_random_image_url(self, **kargs) -> (str, str):
-        show_color(COLORS["BLUE"])
+        if self.unicorn_pi:
+            show_color(COLORS["BLUE"])
         api_detail_url = kargs.get("api_detail_url")
         # Once we know the volume ID we can do a second API call to fetch a list of issues and pick a random cover image
         params = {"api_key": self.api_key, "format": "json"}

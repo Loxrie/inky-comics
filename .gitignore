@@ -10,3 +10,4 @@ Thumbs.db
 
 __pycache__
 settings.py
+settings.json
