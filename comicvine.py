@@ -90,7 +90,8 @@ class ComicVine:
         elif search_type == "Character":
             search_params = {
                 "query": args[1],
-                "field_list": "id,name,api_detail_url,site_detail_url",
+                "field_list": "id,name,api_detail_url,site_detail_url,count_of_issue_appearances",
+                "sort_field": "count_of_issue_appearances",
                 "endpoint": "characters",
             }
             self.task_list.append((self.search, search_params))
@@ -164,13 +165,14 @@ class ComicVine:
         except ComicCollisionError as ce:
             if self.last_chance is not True:
                 history = self.rewind()
-                self.reset()
-                [self.task_list.append(e[0]) for e in history]
-                self.last_call_result = history[0][2]
-                self.last_chance = True
-                logging.debug(
-                    f"Rerunning {self.task_list} with initial query {self.last_call_result}"
-                )
+                if history:
+                    self.reset()
+                    [self.task_list.append(e[0]) for e in history]
+                    self.last_call_result = history[0][2]
+                    self.last_chance = True
+                    logging.debug(
+                        f"Rerunning {self.task_list} with initial query {self.last_call_result}"
+                    )
             else:
                 return self.last_call_result
 
@@ -193,7 +195,7 @@ class ComicVine:
         with open("seen_comics.pickle", "wb") as f:
             pickle.dump(self.seen, f, pickle.HIGHEST_PROTOCOL)
 
-    def rewind(self) -> str or bool:
+    def rewind(self):
         for call in reversed(self.call_map):
             function, choices, query = call
             if choices > 2:
@@ -205,7 +207,7 @@ class ComicVine:
     def set_random(self, rng):
         self.random = rng
 
-    def search(self, **kargs) -> str:
+    def search(self, **kargs) -> dict:
         if self.unicorn_pi:
             show_color(COLORS["TEAL"])
 
@@ -274,7 +276,7 @@ class ComicVine:
             raise ValueError(f"No {endpoint} found for {query}.")
 
     # Use the api detail url from search and return a random comic api url from all its comics
-    def get_random_comic_url(self, **kargs) -> str:
+    def get_random_comic_url(self, **kargs) -> dict:
         if self.unicorn_pi:
             show_color(COLORS["TURQUOISE"])
         api_detail_url = kargs.get("api_detail_url")
@@ -312,7 +314,7 @@ class ComicVine:
     # So all routes lead here.  Get the detail about the issue
     # collate both the original cover and any special covers and pick a random image
     # Returns the image url and a potential resource name to save
-    def get_random_image_url(self, **kargs) -> (str, str):
+    def get_random_image_url(self, **kargs) -> dict:
         if self.unicorn_pi:
             show_color(COLORS["BLUE"])
         api_detail_url = kargs.get("api_detail_url")
